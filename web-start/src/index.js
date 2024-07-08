@@ -84,11 +84,37 @@ function isUserSignedIn() {
 // Saves a new message on the Cloud Firestore.
 async function saveMessage(messageText) {
   // TODO 7: Push a new message to Cloud Firestore.
+  return firebase.firestore().collection('messages').add({
+    name: getUserName(),
+    text: messageText,
+    profilePicUrl: getProfilePicUrl(),
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(error) {
+    console.error('Error writing new message to database', error);
+  });
 }
 
 // Loads chat messages history and listens for upcoming ones.
 function loadMessages() {
   // TODO 8: Load and listen for new messages.
+   // Create the query to load the last 12 messages and listen for new ones.
+   var query = firebase.firestore()
+   .collection('messages')
+   .orderBy('timestamp', 'desc')
+   .limit(12);
+
+// Start listening to the query.
+query.onSnapshot(function(snapshot) {
+snapshot.docChanges().forEach(function(change) {
+if (change.type === 'removed') {
+deleteMessage(change.doc.id);
+} else {
+var message = change.doc.data();
+displayMessage(change.doc.id, message.timestamp, message.name,
+        message.text, message.profilePicUrl, message.imageUrl);
+}
+});
+});
 }
 
 // Saves a new message containing an image in Firebase.
